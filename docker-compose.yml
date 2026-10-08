@@ -1,0 +1,112 @@
+# Sideband - stack completo.
+# Davanti c'e' Nginx Proxy Manager (non incluso): vedi la nota sulle reti in fondo.
+#   cp .env.example .env  &&  docker compose up -d --build
+
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    networks: [sideband]
+
+  # Parse Server + cloud code + pannello statico + proxy /ws verso il backend
+  parse:
+    build: ./parse
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URI: mongodb://mongo:27017/sideband
+      # il bridge seriale e l'helper WireGuard stanno nel backend
+      BACKEND_URL: http://backend:8080
+      HELPER_URL: http://backend:8080
+    volumes:
+      # il pannello non e' dentro l'immagine: cosi' lo modifichi senza rebuild
+      - ./web/html:/app/public:ro
+    ports:
+      # BIND_ADDR (.env): 127.0.0.1 se NPM gira sull'host, 0.0.0.0 se deve
+      # raggiungerti da fuori o da un'altra rete docker
+      - "${BIND_ADDR:-127.0.0.1}:${PARSE_PORT:-4000}:${PARSE_PORT:-4000}"
+    depends_on:
+      mongo:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:'+(process.env.PARSE_PORT||4000)+'/healthz',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks: [sideband]
+
+  # Concentratore WireGuard (wg0) + API helper + bridge seriale websocket
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # il backend chiama consumeConsoleTicket sulla rete interna
+      PARSE_SERVER_URL: http://parse:${PARSE_PORT:-4000}/parse
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    sysctls:
+      net.ipv4.ip_forward: "1"
+      net.ipv4.conf.all.src_valid_mark: "1"
+    volumes:
+      # chiavi del concentratore e peer salvati da `wg-quick save`: NON perderlo,
+      # ci si rigenererebbe la pubkey e tutti i client andrebbero riprovvisionati
+      - wg-config:/etc/wireguard
+    ports:
+      # unica porta davvero pubblica: l'endpoint WireGuard
+      - "51820:51820/udp"
+    networks: [sideband]
+
+  # Parse Dashboard (admin interno, dietro NPM su dash.sideband.it)
+  dashboard:
+    # immagine ufficiale + polyfill crypto.randomUUID (serve in HTTP, vedi ./dashboard)
+    build: ./dashboard
+    restart: unless-stopped
+    environment:
+      PARSE_DASHBOARD_APP_ID: ${PARSE_APP_ID}
+      PARSE_DASHBOARD_MASTER_KEY: ${PARSE_MASTER_KEY}
+      PARSE_DASHBOARD_APP_NAME: Sideband
+      # URL che il BROWSER dell'admin deve poter aprire, non quello interno:
+      # in locale http://localhost:${PARSE_PORT:-4000}/parse, in produzione l'URL via NPM
+      PARSE_DASHBOARD_SERVER_URL: ${DASHBOARD_API_URL:-http://localhost:4000/parse}
+      PARSE_DASHBOARD_USER_ID: ${DASH_USER}
+      PARSE_DASHBOARD_USER_PASSWORD: ${DASH_PASS}
+      # la TLS la termina NPM davanti
+      PARSE_DASHBOARD_ALLOW_INSECURE_HTTP: "1"
+      PORT: "4040"
+    ports:
+      - "${BIND_ADDR:-127.0.0.1}:4040:4040"
+    depends_on:
+      parse:
+        condition: service_started
+    networks: [sideband]
+
+volumes:
+  mongo-data:
+  wg-config:
+
+networks:
+  sideband:
+
+  # Se Nginx Proxy Manager gira in Docker su una sua rete, non serve pubblicare
+  # nulla sull'host: scommenta qui sotto, mettendo il nome reale della rete di NPM
+  # (`docker network ls`), aggiungi `npm` alla lista `networks:` di `parse` e
+  # `dashboard`, e togli i loro `ports`. NPM li raggiunge per nome di servizio:
+  #   app.sideband.it  -> parse:4000
+  #   dash.sideband.it -> dashboard:4040
+  #
+  # npm:
+  #   external: true
+  #   name: <nome-rete-di-npm>

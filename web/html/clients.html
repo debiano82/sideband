@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sideband · client</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+  <link href="css/app.css" rel="stylesheet">
+</head>
+<body>
+  <div id="nav"></div>
+  <div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h1 class="h5 mb-0">Client</h1>
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newModal">Nuovo client</button>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <table class="table align-middle mb-0">
+          <thead><tr><th>Nome</th><th>Indirizzo WG</th><th>Hardware</th><th>Porte</th><th>Stato</th><th></th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="newModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header"><h2 class="h6 modal-title">Nuovo client</h2>
+          <button class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <label class="form-label small">Nome</label>
+          <input id="f-name" class="form-control mb-3" placeholder="es. pop-roma-1">
+          <label class="form-label small">Hardware</label>
+          <select id="f-hw" class="form-select mb-3">
+            <option value="rpi">Raspberry Pi</option>
+            <option value="bananapi">Banana Pi R4</option>
+            <option value="generic">Generico OpenWRT</option>
+          </select>
+          <label class="form-label small">Numero porte seriali</label>
+          <input id="f-ports" type="number" min="1" max="32" value="1" class="form-control mb-3">
+          <label class="form-label small">Descrizione</label>
+          <input id="f-desc" class="form-control mb-3" placeholder="opzionale">
+          <hr>
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="f-reset" checked>
+            <label class="form-check-label small" for="f-reset">
+              Ripulisci la configurazione di fabbrica OpenWrt (DHCP server, NAT lan&rarr;wan)
+            </label>
+          </div>
+          <label class="form-label small">LAN di gestione</label>
+          <select id="f-lanmode" class="form-select mb-2" onchange="toggleLanAddr()">
+            <option value="static">IP statico (nessun DHCP)</option>
+            <option value="keep">Lascia com'&egrave;</option>
+            <option value="off">Disabilitata (solo WireGuard)</option>
+          </select>
+          <input id="f-lanaddr" class="form-control mono" value="192.168.1.1/24">
+        </div>
+        <div class="modal-footer">
+          <button id="f-submit" class="btn btn-primary" onclick="create()">Crea client</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/parse/5.3.0/parse.min.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/clients.js"></script>
+</body>
+</html>

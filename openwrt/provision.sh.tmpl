@@ -1,0 +1,54 @@
+#!/bin/sh
+# ============================================================
+# Sideband - provisioning client OpenWRT  (TEMPLATE DI RIFERIMENTO)
+# Lo script reale viene generato per ogni client dal pannello
+# (Parse cloud: generateProvisioningScript) con chiavi e IP gia' compilati.
+# I segnaposto {{...}} qui sotto sono solo a scopo illustrativo.
+# ============================================================
+set -e
+
+# Pi senza RTC: se l'orologio e' sballato sincronizza prima via NTP
+# (altrimenti la verifica TLS dei repo fallisce con "SSL verify error")
+if [ "$(date +%Y)" -lt 2024 ]; then ntpd -q -p pool.ntp.org || true; fi
+
+# ---------- package manager ----------
+# OpenWrt >= 24.10 (e main) usa apk, le release precedenti opkg.
+if command -v apk >/dev/null 2>&1; then PKG=apk; else PKG=opkg; fi
+pkg_update()  { case "$PKG" in apk) apk update ;;      opkg) opkg update ;;      esac; }
+pkg_install() { case "$PKG" in apk) apk add "$@" ;;    opkg) opkg install "$@" ;; esac; }
+pkg_installed() {
+  case "$PKG" in
+    apk)  apk info -e "$1" >/dev/null 2>&1 ;;
+    opkg) opkg list-installed 2>/dev/null | grep -q "^$1 " ;;
+  esac
+}
+
+pkg_update
+pkg_install wireguard-tools kmod-wireguard ser2net
+# opzionali (mwan3 + kmod seriali): installati uno a uno, gli assenti non bloccano
+
+# ---------- rimozione configurazione di fabbrica ----------
+# Un nodo OOB non deve distribuire lease ne' fare da router:
+#  - elimina ogni sezione `config dhcp` e la sezione odhcpd
+#  - spegne e disabilita odhcpd (DHCPv6 / RA)
+#  - dnsmasq resta acceso, ma solo come resolver locale del nodo
+#  - rimuove forwarding lan->wan e masquerading sulla zona wan
+#  - LAN: {{LAN_MODE}} = static (IP di gestione fisso) | keep | off
+
+# WireGuard
+uci set network.wg0="interface"
+uci set network.wg0.proto="wireguard"
+uci set network.wg0.private_key="{{WG_PRIVATE_KEY}}"
+uci add_list network.wg0.addresses="{{WG_ADDRESS}}/32"
+uci set network.wgserver="wireguard_wg0"
+uci set network.wgserver.public_key="{{WG_SERVER_PUBKEY}}"
+uci set network.wgserver.endpoint_host="{{WG_HOST}}"
+uci set network.wgserver.endpoint_port="{{WG_PORT}}"
+uci set network.wgserver.persistent_keepalive="25"
+uci add_list network.wgserver.allowed_ips="10.99.0.0/24"
+uci set network.wgserver.route_allowed_ips="1"
+uci commit network
+
+# naming seriale stabile (per path USB fisico) -> /dev/sideband/<path>
+# ser2net: una porta TCP per seriale, in ascolto solo su {{WG_ADDRESS}}
+# mwan3: failover multi-WAN (interfacce specifiche del sito)

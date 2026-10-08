@@ -1,0 +1,6 @@
+<svg width="200" height="44" viewBox="0 0 200 44" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Sideband">
+  <rect x="2" y="2" width="40" height="40" rx="11" fill="#2D7FF9"/>
+  <path d="M15 14 L24 22 L15 30" fill="none" stroke="#FFFFFF" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="26" y="26.5" width="11" height="4" rx="1.5" fill="#22D3EE"/>
+  <text x="52" y="29" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-size="22" font-weight="600" fill="#0F2138">Sideband</text>
+</svg>

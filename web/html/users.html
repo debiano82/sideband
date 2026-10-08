@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sideband · utenti</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+  <link href="css/app.css" rel="stylesheet">
+</head>
+<body>
+  <div id="nav"></div>
+  <div class="container py-4" style="max-width:820px">
+
+    <div class="card mb-4">
+      <div class="card-body">
+        <h2 class="h6 mb-3">La mia password</h2>
+        <div class="row g-2 align-items-end">
+          <div class="col"><label class="form-label small">Attuale</label>
+            <input id="cp-cur" type="password" class="form-control" autocomplete="current-password"></div>
+          <div class="col"><label class="form-label small">Nuova</label>
+            <input id="cp-new" type="password" class="form-control" autocomplete="new-password"></div>
+          <div class="col"><label class="form-label small">Conferma</label>
+            <input id="cp-new2" type="password" class="form-control" autocomplete="new-password"></div>
+          <div class="col-auto"><button id="cp-go" class="btn btn-primary" onclick="changeMine()">Aggiorna</button></div>
+        </div>
+        <div id="cp-msg" class="small mt-2"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 class="h6 mb-0">Utenti</h2>
+          <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#newUser">Nuovo utente</button>
+        </div>
+        <table class="table align-middle mb-0">
+          <thead><tr><th>Utente</th><th>Creato</th><th class="text-end"></th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="newUser" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header"><h2 class="h6 modal-title">Nuovo utente</h2>
+          <button class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <label class="form-label small">Username</label>
+          <input id="nu-user" class="form-control mb-3" autocomplete="off">
+          <label class="form-label small">Password</label>
+          <input id="nu-pass" type="password" class="form-control" autocomplete="new-password">
+        </div>
+        <div class="modal-footer"><button id="nu-go" class="btn btn-primary" onclick="createU()">Crea</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="resetPw" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header"><h2 class="h6 modal-title">Reset password</h2>
+          <button class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <p class="small text-muted mb-2">Utente: <strong id="rp-name"></strong></p>
+          <label class="form-label small">Nuova password</label>
+          <input id="rp-pass" type="password" class="form-control" autocomplete="new-password">
+        </div>
+        <div class="modal-footer"><button class="btn btn-primary" onclick="doReset()">Imposta</button></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/parse/5.3.0/parse.min.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/users.js"></script>
+</body>
+</html>

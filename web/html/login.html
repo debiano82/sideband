@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sideband · accesso</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+  <link href="css/app.css" rel="stylesheet">
+</head>
+<body class="d-flex align-items-center" style="min-height:100vh">
+  <div class="container" style="max-width:380px">
+    <div class="text-center mb-4">
+      <img src="assets/logo.svg" alt="Sideband" height="44">
+    </div>
+    <div class="card p-4">
+      <h1 class="h6 text-muted mb-3">Accesso</h1>
+      <input id="u" class="form-control mb-2" placeholder="Utente" autocomplete="username">
+      <input id="p" type="password" class="form-control mb-3" placeholder="Password" autocomplete="current-password">
+      <button id="go" class="btn btn-primary w-100">Entra</button>
+      <div id="err" class="text-danger small mt-2"></div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/parse/5.3.0/parse.min.js"></script>
+  <script src="js/common.js"></script>
+  <script>
+    if (Parse.User.current()) location.href = "index.html";
+    document.getElementById("go").onclick = async () => {
+      const err = document.getElementById("err");
+      err.textContent = "";
+      try {
+        await Parse.User.logIn(document.getElementById("u").value, document.getElementById("p").value);
+        location.href = "index.html";
+      } catch (e) { err.textContent = e.message; }
+    };
+    document.getElementById("p").addEventListener("keydown", (e) => { if (e.key === "Enter") document.getElementById("go").click(); });
+  </script>
+</body>
+</html>
